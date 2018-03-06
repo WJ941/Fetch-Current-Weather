@@ -173,13 +173,13 @@
     function reGeolocation(position) {
       const {latitude, longitude} = position
       var key = 'e333ca7a1fa1ff21aaa482010edcba5b'
-      var regeoUrl = `http://restapi.amap.com/v3/geocode/regeo?key=${key}&location=${longitude},${latitude}&radius=1000`
+      var regeoUrl = `https://restapi.amap.com/v3/geocode/regeo?key=${key}&location=${longitude},${latitude}&radius=1000`
       return AjaxGet(regeoUrl)
     }
     // 获得天气数据
     function getWeather(adcode) {
       var key = 'e333ca7a1fa1ff21aaa482010edcba5b'
-      var weatherurl = `http://restapi.amap.com/v3/weather/weatherInfo?key=${key}&city=${adcode}&extensions=base`
+      var weatherurl = `https://restapi.amap.com/v3/weather/weatherInfo?key=${key}&city=${adcode}&extensions=base`
       return AjaxGet(weatherurl)
     }
     // 获得限行的数据
@@ -188,7 +188,7 @@
       city = city.replace('市', '')
       var pinyinCity = pinyinUtil.getPinyin('成都').replace(' ', '') // 输出 'chengdu'
       log('pinyinCity', pinyinCity)
-      var url = `http://v.juhe.cn/xianxing/index?dtype=&city=${pinyinCity}&type=&key=e99c452fe995c5dca2b184e8095ce9e6`
+      var url = `https://v.juhe.cn/xianxing/index?dtype=&city=${pinyinCity}&type=&key=e99c452fe995c5dca2b184e8095ce9e6`
       return AjaxGet(url)
     }
     async function _main() {
