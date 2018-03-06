@@ -8,8 +8,8 @@ var SSLPORT = 3389
 var keyPath = 'public/cert/214527447900724.key'
 var certPath = 'public/cert/214527447900724.pem'
 if (process.env.NODE_ENV === "production") {
-  keyPath = './cert/214528638570724.key'
-  certPath = './cert/214528638570724.pem'
+  keyPath = 'public/cert/214528638570724.key'
+  certPath = 'public/cert/214528638570724.pem'
   SSLPORT = 3389
 }
 const privateKey  = fs.readFileSync(path.join(__dirname, keyPath), 'utf8');
