@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Fetch Current Weather</title>
+  <link href="https://use.fontawesome.com/releases/v5.0.8/css/all.css" rel="stylesheet">
+</head>
+<style>
+  .skin {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: -1;
+  }
+  .main {
+    color: #fff;
+  }
+  .wea-temp {
+    font-size: 10em;
+  }
+  .wea-temp-unit {
+    font-size: 3em;
+    vertical-align: top;
+  }
+  .wea-subinfo {
+    font-size: 1.5em;
+  }
+  .ft-1-5 {
+    font-size: 1.5em;
+  }
+  .pd-10 {
+    padding: 0 10px;
+  }
+</style>
+<body>
+    <div class="skin">
+        <img src="./img/marguerite-daisy-beautiful-beauty.jpg" alt="">
+      </div>
+  <div class="main">
+    <div class="heaer">
+        <h1>Fetch Current Weather</h1>
+    </div>
+    <div class="container">
+      <!-- 位置情况 -->
+      <div class="location">
+          <p><i class="fas fa-map-marker"></i> 定位中。。。</p>
+      </div>
+      <template id="temp-location">
+        <p><i class="fas fa-map-marker"></i><span> {{district}}， </span><span>{{city}}， </span><span>{{province}}， </span><span>{{country}}</span></p>
+      </template>
+       <!-- 天气情况 -->
+      <div class="weather">
+      </div>
+      <template id="temp-weather">
+        <p>
+          <span class="wea-temp pd-10">{{temperature}}</span><span class="wea-temp-unit">°</span><span class="pd-10 ft-1-5">{{weather}}</span><span class="pd-10 ft-1-5">{{reporttime}}更新</span>
+        </p>
+        <p class="ft-1-5">
+          <span class="pd-10"><i class="fas fa-tint"></i></span><span class="pd-10">湿度{{humidity}}%</span><span class="pd-10"><i class="fas fa-location-arrow"></i></span><span class="pd-10">{{winddirection}}风{{windpower}}级</span>
+          <span>{{licenseNum}}</span>
+        </p>
+      </template>
+      
+      <div class="forecast"></div>
+      <div class="live-index"></div>
+      <div class="calender"></div>
+    </div>
+  </div>
+</body>
+  <script type="text/javascript" src="./utilitys.js"></script>
+
+  <script type="text/javascript" src="./scripts/pinyin_dict_notone.js"></script>
+  <script type="text/javascript" src="./scripts/pinyinUtil.js"></script>
+  <script>
+    // geolocation return {Latitude: 34.0434783, Longitude: -118.25193139999999}
+    // getCityName(lattitude, longitude) return {country: ###, province: ###, city: ###, district: ###}
+    // getWeather(lattitude, longitude) return weather data {temperature: ###, }
+    // getAQI()
+    function observer(Sue) {
+      Object.keys(Sue.data).forEach(key => {
+        defineReactive(Sue.data, key, Sue.data[key], Sue.render.bind(Sue))
+      })
+    }
+    function defineReactive(obj, key, val, cb) {
+      Object.defineProperty(obj, key, {
+        configurable: true,
+        enumerable: true,
+        get() {
+          return val
+        },
+        set(newVal) {
+          if(newVal !== val) {
+            val = newVal
+            cb()
+          }
+        },
+      })
+    }
+    // 位置
+    var geoLoc = {
+      template: '.location',
+      data: {
+        country: '中国',
+        province: '四川',
+        city: '成都',
+        district: '龙泉驿区',
+        adcode: "510112",
+      },
+      render() {
+        sel(this.template).innerHTML = templateReplace(sel('#temp-location').innerHTML, this.data)
+      },
+    }
+    // 天气
+    var weather = {
+      template: '.weather',
+      data: {
+        temperature: 11,
+        reporttime: '2018-03-06 19:00:00',
+        weather: "多云",
+        humidity: '80',
+        winddirection: '西北',
+        windpower: 3,
+        licenseNum:'尾号限行3和7',
+      },
+      render() {
+        sel(this.template).innerHTML = templateReplace(sel('#temp-weather').innerHTML, this.data)
+      },
+    }
+  // 获得经纬度
+    function getGeolocation() {
+      var options = {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      }
+      return new Promise((resolve, reject )=> {
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(pos => {
+            var crd = pos.coords;
+            resolve({latitude: crd.latitude, longitude: crd.longitude})
+          }, err => {
+            reject(err)
+          }, options)
+        } else {
+          reject("Geolocation is not supported by this browser.") 
+        }
+      })
+    }
+    function AjaxGet(url) {
+      return new Promise((resolve, reject )=> {
+        httpRequest = new XMLHttpRequest();
+        if (!httpRequest) {
+          alert('Giving up :( Cannot create an XMLHTTP instance');
+          return false;
+        }
+        httpRequest.onreadystatechange = alertContents;
+        httpRequest.open('GET', url)
+        httpRequest.send()
+        function alertContents() {
+          if (httpRequest.readyState === XMLHttpRequest.DONE) {
+            if (httpRequest.status === 200) {
+              resolve(httpRequest.responseText);
+            } else {
+              reject('There was a problem with the request.');
+            }
+          }
+        }
+      })
+    }
+  // 获得标准格式化地址
+    function reGeolocation(position) {
+      const {latitude, longitude} = position
+      var key = 'e333ca7a1fa1ff21aaa482010edcba5b'
+      var regeoUrl = `http://restapi.amap.com/v3/geocode/regeo?key=${key}&location=${longitude},${latitude}&radius=1000`
+      return AjaxGet(regeoUrl)
+    }
+    // 获得天气数据
+    function getWeather(adcode) {
+      var key = 'e333ca7a1fa1ff21aaa482010edcba5b'
+      var weatherurl = `http://restapi.amap.com/v3/weather/weatherInfo?key=${key}&city=${adcode}&extensions=base`
+      return AjaxGet(weatherurl)
+    }
+    // 获得限行的数据
+    async function getDrivingDistriction(city) {
+      // 参数city为 成都市
+      city = city.replace('市', '')
+      var pinyinCity = pinyinUtil.getPinyin('成都').replace(' ', '') // 输出 'chengdu'
+      log('pinyinCity', pinyinCity)
+      var url = `http://v.juhe.cn/xianxing/index?dtype=&city=${pinyinCity}&type=&key=e99c452fe995c5dca2b184e8095ce9e6`
+      return AjaxGet(url)
+    }
+    async function _main() {
+      observer(geoLoc)
+      observer(weather)
+      var position = await getGeolocation()
+      position = {
+        latitude: position.latitude.toFixed(6),
+        longitude: position.longitude.toFixed(6),
+      }
+      log(position)
+      loop()
+      async function loop() {
+        var geoData = await reGeolocation(position)
+        geoData = JSON.parse(geoData)
+        var adcode = geoData.regeocode.addressComponent.adcode
+        if(adcode.length > 0) {
+      //   data: {
+      //   country: '中国',
+      //   city: '成都',
+      //   district: '龙泉驿区',
+      //   adcode: "510112",}
+          log(geoData)
+          geoLoc.data.country = geoData.regeocode.addressComponent.country
+          geoLoc.data.province = geoData.regeocode.addressComponent.province
+          geoLoc.data.city = geoData.regeocode.addressComponent.city
+          geoLoc.data.district = geoData.regeocode.addressComponent.district
+          geoLoc.data.adcode = geoData.regeocode.addressComponent.adcode
+
+          var weatherData = await getWeather(adcode)
+          weatherData = JSON.parse(weatherData).lives[0]
+
+        // temperature: 11,
+        // reporttime: '2018-03-06 19:00:00',
+        // weather: "多云",
+        // humidity: '80',
+        // winddirection: '西北',
+        // windpower: 3,
+          log(weatherData)
+          weather.data.temperature = weatherData.temperature
+          weather.data.reporttime = timestampConverter(Date.parse(weatherData.reporttime))
+          weather.data.weather = weatherData.weather
+          weather.data.humidity = weatherData.humidity
+          weather.data.winddirection = weatherData.winddirection
+          weather.data.windpower = weatherData.windpower
+
+
+
+          var drivingDsitriction = await getDrivingDistriction(geoLoc.data.city)
+          drivingDsitriction = JSON.parse(drivingDsitriction)
+          log('限行： ', drivingDsitriction)
+          // weather.data.licenseNum = weatherData.windpower
+
+          log(weather.data)
+        } else {
+          log('invalid : ', geoData)
+          setTimeout( function(){
+            loop()
+          }, 1000)
+        }
+      }
+    }
+    _main()
+  </script>
+</html>
