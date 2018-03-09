@@ -8,6 +8,10 @@
   <link href="https://use.fontawesome.com/releases/v5.0.8/css/all.css" rel="stylesheet">
 </head>
 <style>
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
   .skin {
     position: fixed;
     top: 0;
@@ -33,6 +37,55 @@
   .pd-10 {
     padding: 0 10px;
   }
+  .forecast {
+    width:100%;
+    font-size: 2em;
+    border-collapse: collapse;
+  }
+  .forecast tbody tr {
+    border-bottom: 1px solid rgba(255, 255, 255, .4)
+  }
+  .forecast tbody tr:last-child {
+    border-bottom: 0;
+  }
+  .forecast  td {
+    padding: 10px;
+  }
+  .linecircle {
+    fill: white;
+  }
+  .tips {
+    pointer-events: none;
+    display: none;
+  }
+  .tips-border {
+    fill: black;
+    stroke: black;        
+    stroke-width: 2;
+  }
+  .wrap {
+    background-color: rgba(0, 0, 0, 0.3);
+    margin: 10px;
+    padding: 10px;
+  }
+  .hours {
+    min-width: 985px;
+  }
+  .vetc-middle {
+    display: inline-block;
+    vertical-align: middle;
+  }
+  .flex-container {
+    display: flex;
+    flex-wrap: wrap;
+    list-style: none;
+  }
+  .op-5 {
+    opacity: .5;
+  }
+  .bt-1 {
+    border-bottom: 1px solid rgba(200, 200, 200, .5)
+  }
 </style>
 <body>
     <div class="skin">
@@ -47,37 +100,34 @@
       <div class="location">
           <p><i class="fas fa-map-marker"></i> 定位中。。。</p>
       </div>
-      <template id="temp-location">
-        <p><i class="fas fa-map-marker"></i><span> {{district}}， </span><span>{{city}}， </span><span>{{province}}， </span><span>{{country}}</span></p>
-      </template>
-       <!-- 天气情况 -->
-      <div class="weather">
-      </div>
-      <template id="temp-weather">
-        <p>
-          <span class="wea-temp pd-10">{{temperature}}</span><span class="wea-temp-unit">°</span><span class="pd-10 ft-1-5">{{weather}}</span><span class="pd-10 ft-1-5">{{reporttime}}更新</span>
-        </p>
-        <p class="ft-1-5">
-          <span class="pd-10"><i class="fas fa-tint"></i></span><span class="pd-10">湿度{{humidity}}%</span><span class="pd-10"><i class="fas fa-location-arrow"></i></span><span class="pd-10">{{winddirection}}风{{windpower}}级</span>
-          <span>{{licenseNum}}</span>
-        </p>
-      </template>
-      
-      <div class="forecast"></div>
-      <div class="live-index"></div>
-      <div class="calender"></div>
     </div>
   </div>
 </body>
+  <!-- AQI Widget -->
+  <script  type="text/javascript"  charset="utf-8">  
+    (function(w,d,t,f) {
+      w[f] = w[f]||function(c,k,n){
+        s=w[f],
+        k=s['k']=(s['k']||(k?('&k='+k):''));
+        s['c']=c=(c instanceof  Array)?c:[c];
+        s['n']=n=n||0;
+        L=d.createElement(t),
+        e=d.getElementsByTagName(t)[0];  
+        L.async=1;
+        L.src='//feed.aqicn.org/feed/'+(c[n].city)+'/'+(c[n].lang||'')+'/feed.v1.js?n='+n+k;  
+        e.parentNode.insertBefore(L,e);
+      };
+    })(window,document,'script','_aqiFeed'  );    
+  </script>
+  <script src="https://d3js.org/d3.v4.min.js"></script>
+  
   <script type="text/javascript" src="./utilitys.js"></script>
+  <script type="text/javascript" src="./router.js"></script>
 
   <script type="text/javascript" src="./scripts/pinyin_dict_notone.js"></script>
   <script type="text/javascript" src="./scripts/pinyinUtil.js"></script>
+
   <script>
-    // geolocation return {Latitude: 34.0434783, Longitude: -118.25193139999999}
-    // getCityName(lattitude, longitude) return {country: ###, province: ###, city: ###, district: ###}
-    // getWeather(lattitude, longitude) return weather data {temperature: ###, }
-    // getAQI()
     function observer(Sue) {
       Object.keys(Sue.data).forEach(key => {
         defineReactive(Sue.data, key, Sue.data[key], Sue.render.bind(Sue))
@@ -100,7 +150,16 @@
     }
     // 位置
     var geoLoc = {
-      template: '.location',
+      el: '.location',
+      template: `
+        <p>
+          <i class="fas fa-map-marker"></i><span> {{district}}， </span>
+          <span>{{city}}， </span>
+          <span>{{province}}， </span>
+          <span>{{country}}</span>
+          <a href='#/findmycity'>切换</a>
+        </p>
+      `,
       data: {
         country: '中国',
         province: '四川',
@@ -108,13 +167,28 @@
         district: '龙泉驿区',
         adcode: "510112",
       },
+      target: document.createElement('div'),
       render() {
-        sel(this.template).innerHTML = templateReplace(sel('#temp-location').innerHTML, this.data)
+        // sel(this.el).innerHTML = templateReplace(this.template, this.data)
+        this.target.innerHTML = templateReplace(this.template, this.data)
       },
     }
     // 天气
     var weather = {
-      template: '.weather',
+      el: '.weather',
+      template: `
+        <p>
+          <span class="wea-temp pd-10">{{temperature}}</span><span class="wea-temp-unit">°</span>
+          <span><img src="/img/cond_icon_heweather/{{iconCode}}.png" alt=""></span>
+          <span class="pd-10 ft-1-5">{{weather}}</span><span class="pd-10 ft-1-5">{{reporttime}}更新</span>
+          <!-- AQI -->
+          <span id="city-aqi-container" class="ft-1-5"></span>  
+        </p>
+        <p class="ft-1-5">
+          <span class="pd-10"><i class="fas fa-tint"></i></span><span class="pd-10">湿度{{humidity}}%</span><span class="pd-10"><i class="fas fa-location-arrow"></i></span><span class="pd-10">{{winddirection}}{{windpower}}级</span>
+          <span>{{licenseNum}}</span>
+        </p>
+      `,
       data: {
         temperature: 11,
         reporttime: '2018-03-06 19:00:00',
@@ -122,12 +196,289 @@
         humidity: '80',
         winddirection: '西北',
         windpower: 3,
+        iconCode: '100',
         licenseNum:'尾号限行3和7',
       },
+      target: document.createElement('div'),
       render() {
-        sel(this.template).innerHTML = templateReplace(sel('#temp-weather').innerHTML, this.data)
+        // sel(this.el).innerHTML = templateReplace(this.template, this.data)
+        this.target.innerHTML = templateReplace(this.template, this.data)
       },
     }
+    // 预报
+    var forecasts = {
+      el: `
+      `,
+      template: `
+        <tr>
+          <td>{{date}}</td>
+          <td><img class="vetc-middle" width="50px" height="50px" src="/img/cond_icon_heweather/{{cond_code_d}}.png" alt="">
+            <span>{{cond_txt_d}}</span>
+          </td>
+          <td>{{tmp_min}}° / {{tmp_max}}°</td>
+          <td>{{wind_dir}}</td>
+          <td>{{wind_sc}}</td>
+        </tr>
+      `,
+      data: {
+        casts:[]
+      },
+      target: document.createElement('div'),
+      render() {
+        this.target.innerHTML = `
+          <table class="wrap forecast">
+            <thead>
+              <tr>
+                <th>预报</th>
+              </tr>
+            </thead>
+            <tbody class="forecasts">
+            </tbody>
+          </table>
+        `
+        var self = this
+        this.data.casts.forEach( cast => {
+          cast.date = forecastTimeConverter(new Date(cast.date))
+          // sel(self.el).innerHTML += templateReplace(self.template, cast)
+          self.target.querySelector('tbody').innerHTML += templateReplace(self.template, cast)
+        })
+      },
+    }
+    // 每小时天气折线图
+  var hourlyWea = {
+    el: '',
+    target: document.createElement('div'),
+    data: {
+      hourlyData: {}
+    },
+    render() {
+      log('hourly: ', this.data.hourlyData)
+      this.createHourslyView.bind(this)()
+    },
+    createHourslyView(data) {
+      var data = this.data.hourlyData
+      var margin = {top: 20, right: 20, bottom: 30, left: 50},
+        width = document.body.clientWidth - margin.left - margin.right,
+        height = 400 - margin.top - margin.bottom;
+      this.target.innerHTML = ''
+      var svg = d3.select(this.target)
+        .append('svg')
+        .attr('width', width + margin.left + margin.right)
+        .attr('height', height + margin.top + margin.bottom);
+        
+      var container = svg.append('g')
+        .attr('class', 'content')
+        .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+      var parseTime = d3.timeParse("%Y-%m-%d %H:%M");
+      var x = d3.scaleTime()
+        .domain(d3.extent(data, function(d) { 
+          d.time = parseTime(d.time) 
+          return d.time;
+        }))
+        .range([0, width]);
+      var y = d3.scaleLinear()
+        .domain([0, d3.max(data, function(d) { return Number(d.tmp); })])
+        .range([height, 0]);
+
+      var line = d3.line()
+        .x(function(d) { return x(d.time); })
+        .y(function(d) { return y(d.tmp); });
+      var xAxis = d3.axisBottom(x)
+        .ticks(8)
+        .tickFormat(d3.timeFormat("%d日%H:%M"));
+      var yAxis = d3.axisRight(y)
+        .ticks(8)
+      container.append("g")
+        .call(customXAxis);
+      container.append("g")
+        .call(customYAxis);
+        
+        function customXAxis(g) {
+          g.call(xAxis);
+          g.attr("transform", "translate(0," + height + ")")
+          g.select(".domain").remove();
+          g.selectAll("line").remove();
+          g.selectAll(".tick text")
+            .attr('fill', 'white')
+            .attr('font-size', '2em');
+        }
+
+        function customYAxis(g) {
+          g.call(yAxis);
+          g.attr("transform", "translate(" + -margin.left + ", 0)")
+          g.select(".domain").remove();
+          g.selectAll(".tick line").remove();
+          g.append("text")
+            .attr("y", 6)
+            .attr("x", 100)
+            .attr("dy", "0.71em")
+            .attr("text-anchor", "end")
+            .text("温度/°C");
+          g.selectAll("text")
+            .attr('fill', 'white')
+            .attr('font-size', '2em');
+        }
+      // 折线
+      container.append("path")
+        .datum(data)
+        .attr("fill", "none")
+        .attr("stroke", "white")
+        .attr("stroke-linejoin", "round")
+        .attr("stroke-linecap", "round")
+        .attr("stroke-width", 3)
+        .attr("d", line);
+        
+      // 圆点
+      var g = container.selectAll('circle')
+        .data(data)
+        .enter()
+        .append('g')
+        .append('circle')
+        .attr('class', 'linecircle')
+        .attr('cx', line.x())
+        .attr('cy', line.y())
+        .attr('r', 6)
+        .on('mouseover', function() {
+          d3.select(this).transition().duration(200).attr('r', 8);
+        })
+        .on('mouseout', function() {
+          d3.select(this).transition().duration(200).attr('r', 6);
+        });
+      // tooltips
+      var tips = container.append('g').attr('class', 'tips');
+      tips.append('rect')
+        .attr('class', 'tips-border')
+        .attr('width', 150)
+        .attr('height', 50)
+        .attr('rx', 10)
+        .attr('ry', 10);
+        
+      var wording1 = tips.append('text')
+        .attr('class', 'tips-text')
+        .attr('fill', 'white')
+        .attr('x', 10)
+        .attr('y', 20)
+        .text('');
+        
+      var wording2 = tips.append('text')
+        .attr('class', 'tips-text')
+        .attr('fill', 'white')
+        .attr('x', 10)
+        .attr('y', 40)
+        .text('');
+      container
+        .on('mousemove', function() {
+          var m = d3.mouse(this),
+            cx = m[0] - margin.left;
+      
+          var x0 = x.invert(cx);
+          var i = (d3.bisector(function(d) {
+            return d.time;
+          }).left)(data, x0, 1);
+      
+          var d0 = data[i - 1],
+            d1 = data[i] || {},
+            d = x0 - d0.time > d1.time - x0 ? d1 : d0;
+      
+          function formatWording(d) {
+            return '日期：' + d3.timeFormat("%d日%H:%M")(d.time);
+          }
+          wording1.text(formatWording(d));
+          wording2.text('温度：' + d.tmp);
+      
+          var x1 = x(d.time),
+            y1 = y(d.tmp);
+      
+          // 处理超出边界的情况
+          var dx = x1 > width ? x1 - width + 200 : x1 + 200 > width ? 200 : 0;
+      
+          var dy = y1 > height ? y1 - height + 50 : y1 + 50 > height ? 50 : 0;
+      
+          x1 -= dx;
+          y1 -= dy;
+      
+          d3.select('.tips')
+            .attr('transform', 'translate(' + x1 + ',' + y1 + ')');
+      
+          d3.select('.tips').style('display', 'block');
+        })
+        .on('mouseout', function() {
+          d3.select('.tips').style('display', 'none');
+        });
+    },
+  }
+
+    // 生活指数
+    var lifestyle = {
+      el: `
+        
+      `,
+      template: `
+        <li class="pd-10">
+          <p>{{type}}</p>
+          <p class="op-5">{{brf}}</dd>
+        </li>
+      `,
+      data: {
+        lifestyle: [],
+        type: {
+          'comf': '舒适度指数',
+          'cw': '洗车指数',
+          'drsg': '穿衣指数',
+          'flu': "感冒指数",
+          'sport': '运动指数',
+          'trav': '旅游指数',
+          'uv': '紫外线指数',
+          'air': '空气污染扩散条件指数'
+        },
+      },
+      target: document.createElement('div'),
+      render() {
+        this.target.innerHTML = `
+          <div class="wrap">
+            <h3 class="bt-1">生活指数</h3>
+            <ul class="flex-container lifestyle">
+            </ul>
+          </div>
+        `
+        var self = this
+        self.data.lifestyle.forEach( i => {
+          var a = {}
+          a.type = self.data.type[i.type]
+          a.brf = i.brf
+          self.target.querySelector('.lifestyle').innerHTML += templateReplace(self.template, a)
+        })
+      },
+    }
+    // 城市
+    var allCitys = {
+      el: '.container',
+      template: `
+        <p><a href="#/{{adcode}}">{{name}}</a></p>
+      `,
+      data: {
+        citys: []
+      },
+      render() {
+        var self = this
+        sel(self.el).innerHTML = ''
+        this.data.citys.forEach(  function(c) {
+          sel(self.el).innerHTML += templateReplace(self.template, c)
+          // 注册路由
+          Router.route('/' + c.adcode, async function() {
+            log('city: ', c)
+            if(c.level === 'city') {
+              _main(c.center)
+            } else {
+              var citys = await getCity(c.name)
+              log('findmycity', citys)
+              allCitys.data.citys = citys
+            }
+          })
+        })
+      }
+    }
+
   // 获得经纬度
     function getGeolocation() {
       var options = {
@@ -148,108 +499,124 @@
         }
       })
     }
-    function AjaxGet(url) {
-      return new Promise((resolve, reject )=> {
-        httpRequest = new XMLHttpRequest();
-        if (!httpRequest) {
-          alert('Giving up :( Cannot create an XMLHTTP instance');
-          return false;
-        }
-        httpRequest.onreadystatechange = alertContents;
-        httpRequest.open('GET', url)
-        httpRequest.send()
-        function alertContents() {
-          if (httpRequest.readyState === XMLHttpRequest.DONE) {
-            if (httpRequest.status === 200) {
-              resolve(httpRequest.responseText);
-            } else {
-              reject('There was a problem with the request.');
-            }
-          }
-        }
-      })
-    }
-  // 获得标准格式化地址
-    function reGeolocation(position) {
-      const {latitude, longitude} = position
-      var key = 'e333ca7a1fa1ff21aaa482010edcba5b'
-      var regeoUrl = `https://restapi.amap.com/v3/geocode/regeo?key=${key}&location=${longitude},${latitude}&radius=1000`
-      return AjaxGet(regeoUrl)
-    }
-    // 获得天气数据
-    function getWeather(adcode) {
-      var key = 'e333ca7a1fa1ff21aaa482010edcba5b'
-      var weatherurl = `https://restapi.amap.com/v3/weather/weatherInfo?key=${key}&city=${adcode}&extensions=base`
-      return AjaxGet(weatherurl)
-    }
-    // 获得限行的数据
-    async function getDrivingDistriction(city) {
-      // 参数city为 成都市
-      city = city.replace('市', '')
-      var pinyinCity = pinyinUtil.getPinyin('成都').replace(' ', '') // 输出 'chengdu'
-      log('pinyinCity', pinyinCity)
-      var url = `https://v.juhe.cn/xianxing/index?dtype=&city=${pinyinCity}&type=&key=e99c452fe995c5dca2b184e8095ce9e6`
+    // 获得城市英文名称
+    function getCityName(position) {
+      var key = 'a40ac9db1e17446d928be71ecddec674'
+      var url = `https://free-api.heweather.com/s6/search?lang=en&location=${position}&key=${key}`
       return AjaxGet(url)
     }
-    async function _main() {
+    // 获得实时预报
+    function getWeaNow(position) {
+      var key = 'a40ac9db1e17446d928be71ecddec674'
+      var url = `https://free-api.heweather.com/s6/weather/now?location=${position}&key=${key}`
+      return AjaxGet(url)
+    }
+    // 获得3-10天预报
+    function getDailyForecast(position) {
+      var key = 'a40ac9db1e17446d928be71ecddec674'
+      var url = `https://free-api.heweather.com/s6/weather/forecast?location=${position}&key=${key}`
+      return AjaxGet(url)
+    }
+    // 获得逐小时预报
+    function getHourlyWea(position) {
+      // position  经度,纬度
+      var key = 'a40ac9db1e17446d928be71ecddec674'
+      var url = `https://free-api.heweather.com/s6/weather/hourly?location=${position}&key=${key}`
+      return AjaxGet(url)
+    }
+    // 获得生活指数
+    function getLifestyle(position) {
+      var key = 'a40ac9db1e17446d928be71ecddec674'
+      var url = `https://free-api.heweather.com/s6/weather/lifestyle?location=${position}&key=${key}`
+      return AjaxGet(url)
+    }
+    // 获得控制指数hourly
+    function getAirHourly(position) {
+      var key = 'a40ac9db1e17446d928be71ecddec674'
+      var url = `https://free-api.heweather.com/s6/weather/lifestyle?location=${position}&key=${key}`
+      return AjaxGet(url)
+    }
+    //  计算限行
+    function computeDriveDistrict() {
+      var dayOfWeek = (new Date()).getDay()
+      var districtNum = [
+        null,
+        [1,6],
+        [2,7],
+        [3, 8],
+        [4,9],
+        [5,0],
+        null,
+      ]
+      if(districtNum[dayOfWeek]) {
+        return `尾号限行${districtNum[dayOfWeek][0]}和${districtNum[dayOfWeek][1]}`
+      } else {
+        return "不限行"
+      }
+    }
+    async function _main(position) {
+      // position: 北京市
       observer(geoLoc)
       observer(weather)
-      var position = await getGeolocation()
-      position = {
-        latitude: position.latitude.toFixed(6),
-        longitude: position.longitude.toFixed(6),
-      }
-      log(position)
-      loop()
-      async function loop() {
-        var geoData = await reGeolocation(position)
-        geoData = JSON.parse(geoData)
-        var adcode = geoData.regeocode.addressComponent.adcode
-        if(adcode.length > 0) {
-      //   data: {
-      //   country: '中国',
-      //   city: '成都',
-      //   district: '龙泉驿区',
-      //   adcode: "510112",}
-          log(geoData)
-          geoLoc.data.country = geoData.regeocode.addressComponent.country
-          geoLoc.data.province = geoData.regeocode.addressComponent.province
-          geoLoc.data.city = geoData.regeocode.addressComponent.city
-          geoLoc.data.district = geoData.regeocode.addressComponent.district
-          geoLoc.data.adcode = geoData.regeocode.addressComponent.adcode
-
-          var weatherData = await getWeather(adcode)
-          weatherData = JSON.parse(weatherData).lives[0]
-
-        // temperature: 11,
-        // reporttime: '2018-03-06 19:00:00',
-        // weather: "多云",
-        // humidity: '80',
-        // winddirection: '西北',
-        // windpower: 3,
-          log(weatherData)
-          weather.data.temperature = weatherData.temperature
-          weather.data.reporttime = timestampConverter(Date.parse(weatherData.reporttime))
-          weather.data.weather = weatherData.weather
-          weather.data.humidity = weatherData.humidity
-          weather.data.winddirection = weatherData.winddirection
-          weather.data.windpower = weatherData.windpower
-
-
-
-          var drivingDsitriction = await getDrivingDistriction(geoLoc.data.city)
-          drivingDsitriction = JSON.parse(drivingDsitriction)
-          log('限行： ', drivingDsitriction)
-          // weather.data.licenseNum = weatherData.windpower
-
-          log(weather.data)
-        } else {
-          log('invalid : ', geoData)
-          setTimeout( function(){
-            loop()
-          }, 1000)
+      observer(forecasts)
+      observer(lifestyle)
+      observer(allCitys)
+      observer(hourlyWea)
+      if(!position) {
+        position = await getGeolocation()
+        position = {
+          latitude: position.latitude.toFixed(6),
+          longitude: position.longitude.toFixed(6),
         }
+        position = position.longitude + ',' + position.latitude
       }
+      log('get location: ', position)
+      var res = await getCityName(position)
+      var city = JSON.parse(res).HeWeather6[0].basic.parent_city
+      log('get city name: ', city)
+      _aqiFeed({container:"city-aqi-container", lang:"cn" , city: 'guizhou'})
+      // 和风天气 实时天气
+      var weatherData = await getWeaNow(position)
+      weatherData = JSON.parse(weatherData)
+      log('get weather now',weatherData)
+      var posData = weatherData.HeWeather6[0].basic
+      // 更新地址
+      geoLoc.data.country = posData.cnty
+      geoLoc.data.province = posData.admin_area
+      geoLoc.data.city = posData.parent_city
+      geoLoc.data.district = posData.location
+      geoLoc.data.iconCode = posData.cond_code
+      // 更新实时天气
+      var weaNow = weatherData.HeWeather6[0].now
+      weather.data.temperature = weaNow.tmp
+      weather.data.reporttime = timestampConverter(Date.parse(weatherData.HeWeather6[0].update.loc))
+      weather.data.weather = weaNow.cond_txt
+      weather.data.winddirection = weaNow.wind_dir
+      weather.data.windpower = weaNow.wind_sc
+      weather.data.licenseNum = computeDriveDistrict()
+      // 和风天气数据 daily forecast
+      var res = await getDailyForecast(position)
+      res = JSON.parse(res)
+      var dailyForecast  = res.HeWeather6[0].daily_forecast
+      log('get 3-10 天预报： ', dailyForecast)
+      forecasts.data.casts = dailyForecast
+
+      //  和风天气 hourly weather 
+      var res = await getHourlyWea(position)
+      res = JSON.parse(res)
+      hourlyWea.data.hourlyData = res.HeWeather6[0].hourly
+
+      // 生活指数
+      var res = await getLifestyle(position)
+      res = JSON.parse(res)
+      log('get lifestyle: ', res)
+      lifestyle.data.lifestyle = res.HeWeather6[0].lifestyle
+      content.innerHTML = ''
+      content.appendChild(geoLoc.target)
+      content.appendChild(weather.target)
+      content.appendChild(forecasts.target)
+      content.appendChild(hourlyWea.target)
+      content.appendChild(lifestyle.target)
     }
     _main()
   </script>

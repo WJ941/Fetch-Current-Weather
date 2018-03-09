@@ -69,26 +69,26 @@ function downloadFile(fileName, content){
   aLink.href = URL.createObjectURL(blob)
   aLink.dispatchEvent(evt)
 }
-function AjaxGet(url, callback) {
-  var httpRequest = new XMLHttpRequest()
-  if (!httpRequest) {
-    log('Giving up :( Cannot create an XMLHTTP instance')
-    return false
-  }
-  httpRequest.onreadystatechange = function() {
-    if (httpRequest.readyState === XMLHttpRequest.DONE) {
-      if (httpRequest.status === 200) {
-        // var res = JSON.parse(httpRequest.responseText)
-        callback(httpRequest.responseText)
-      } else {
-        log('There was a problem with the request.')
-      }
-    }
-  }
-  // httpRequest.open('GET', 'http://localhost:3000/invite')
-  httpRequest.open('GET', url)
-  httpRequest.send()
-}
+// function AjaxGet(url, callback) {
+//   var httpRequest = new XMLHttpRequest()
+//   if (!httpRequest) {
+//     log('Giving up :( Cannot create an XMLHTTP instance')
+//     return false
+//   }
+//   httpRequest.onreadystatechange = function() {
+//     if (httpRequest.readyState === XMLHttpRequest.DONE) {
+//       if (httpRequest.status === 200) {
+//         // var res = JSON.parse(httpRequest.responseText)
+//         callback(httpRequest.responseText)
+//       } else {
+//         log('There was a problem with the request.')
+//       }
+//     }
+//   }
+//   // httpRequest.open('GET', 'http://localhost:3000/invite')
+//   httpRequest.open('GET', url)
+//   httpRequest.send()
+// }
 function copyText(element) {
   window.getSelection().removeAllRanges()
   var range = document.createRange()
@@ -185,4 +185,53 @@ function timestampConverter(milliSeconds) {
   } else {
     console.log('invalid time')
   }
+}
+function forecastTimeConverter(milliSeconds) {
+  var oneday = 1000 * 60 * 60 * 24
+  var d = new Date()
+  d.setMilliseconds(0)
+  d.setSeconds(0)
+  d.setMinutes(0)
+  d.setHours(0)
+  var today = Date.parse(d)
+  var tomorrow = today + oneday // 明天
+  var afterTomorrow = tomorrow + oneday // 后天
+  var option = {
+    day: '2-digit',
+  }
+  var date = new Date(milliSeconds)
+  if(milliSeconds >= today && milliSeconds <= tomorrow) {
+    // today
+    return '今天'
+  } else if(milliSeconds >= tomorrow && milliSeconds <= afterTomorrow) {
+    // yesterday
+    return '明天 '
+  } else if(milliSeconds <= afterTomorrow + oneday && milliSeconds >= afterTomorrow) {
+     // before yesterday or after tomorrow
+     return '后天'
+  } else  if( milliSeconds >= afterTomorrow + oneday){
+    return date.toLocaleString('zh-Hans', option)
+  }
+}
+
+function AjaxGet(url) {
+  return new Promise((resolve, reject )=> {
+    httpRequest = new XMLHttpRequest();
+    if (!httpRequest) {
+      alert('Giving up :( Cannot create an XMLHTTP instance');
+      return false;
+    }
+    httpRequest.onreadystatechange = alertContents;
+    httpRequest.open('GET', url)
+    httpRequest.send()
+    function alertContents() {
+      if (httpRequest.readyState === XMLHttpRequest.DONE) {
+        if (httpRequest.status === 200) {
+          resolve(httpRequest.responseText);
+        } else {
+          reject('There was a problem with the request.');
+        }
+      }
+    }
+  })
 }

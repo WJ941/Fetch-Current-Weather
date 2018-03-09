@@ -2,6 +2,7 @@ const express = require('express')
 const path = require('path')
 var https = require('https')
 var fs = require('fs')
+const crypto = require('crypto')
 const app = express()
 var SSLPORT = 3389
 //导入HTTPS证书文件  
@@ -23,6 +24,4 @@ httpsServer.listen(SSLPORT, function() {
 
 
 app.use(express.static( path.join(__dirname, 'public')))
-// app.get('/', (req, res) => res.send('Hello World!'))
-
-// app.listen(4000, () => console.log('Example app listening on port 3000!'))
+app.get('/', (req, res) => res.send('Hello World!'))
