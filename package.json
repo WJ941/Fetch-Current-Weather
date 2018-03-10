@@ -1,23 +1,22 @@
 {
   "name": "fetch-current-weather",
   "version": "1.0.0",
-  "description": "",
-  "main": "app.js",
-  "dependencies": {
-    "express": "^4.16.2"
-  },
-  "devDependencies": {},
+  "description": "A Vue.js project",
+  "author": "WJ941 <wangshaosen666@gmail.com>",
+  "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/WJ941/Fetch-Current-Weather.git"
+  "dependencies": {
   },
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/WJ941/Fetch-Current-Weather/issues"
+  "devDependencies": {
   },
-  "homepage": "https://github.com/WJ941/Fetch-Current-Weather#readme"
+  "engines": {
+    "node": ">= 6.0.0",
+    "npm": ">= 3.0.0"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not ie <= 8"
+  ]
 }

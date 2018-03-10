@@ -15,11 +15,6 @@ Router.prototype.init = function() {
 }
 window.Router = new Router();
 window.Router.init();
-// var content = document.querySelector('body');
-// // change Page anything
-// function changeBgColor(color) {
-//   content.style.backgroundColor = color;
-// }
 Router.route('/', function() {
   // changeBgColor('white');
   log('index')
@@ -27,11 +22,11 @@ Router.route('/', function() {
   _main()
 });
 Router.route('/findmycity', async function() {
+  observer(model.allCitys)
   var citys = await getCity('中国')
   log('findmycity', citys)
-  allCitys.data.citys = citys
+  model.allCitys.data.citys = citys
 });
-var content = document.querySelector('.container');
 async function getCity(dis) {
   var key = 'e333ca7a1fa1ff21aaa482010edcba5b'
   var url = `https://restapi.amap.com/v3/config/district?keywords=${dis}&subdistrict=1&key=${key}&extensions=base`

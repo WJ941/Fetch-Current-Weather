@@ -229,9 +229,29 @@ function AjaxGet(url) {
         if (httpRequest.status === 200) {
           resolve(httpRequest.responseText);
         } else {
-          reject('There was a problem with the request.');
+          reject('There was a problem with the request :' + httpRequest.responseText);
         }
       }
     }
+  })
+}
+function observer(Sue) {
+  Object.keys(Sue.data).forEach(key => {
+    defineReactive(Sue.data, key, Sue.data[key], Sue.render.bind(Sue))
+  })
+}
+function defineReactive(obj, key, val, cb) {
+  Object.defineProperty(obj, key, {
+    configurable: true,
+    enumerable: true,
+    get() {
+      return val
+    },
+    set(newVal) {
+      if(newVal !== val) {
+        val = newVal
+        cb()
+      }
+    },
   })
 }
