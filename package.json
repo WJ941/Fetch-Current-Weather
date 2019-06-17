@@ -4,12 +4,9 @@
   "description": "A Vue.js project",
   "author": "WJ941 <wangshaosen666@gmail.com>",
   "private": true,
-  "scripts": {
-  },
-  "dependencies": {
-  },
-  "devDependencies": {
-  },
+  "scripts": {},
+  "dependencies": {},
+  "devDependencies": {},
   "engines": {
     "node": ">= 6.0.0",
     "npm": ">= 3.0.0"
